@@ -1,86 +1,126 @@
 import streamlit as st
 from datetime import date, datetime
-from fpdf import FPDF
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from matplotlib.backends.backend_pdf import PdfPages
 import io
 
 
 def gerar_pdf_relatorio(relatorio_texto, nome_arquivo):
-    """Gera um PDF a partir do texto do relatório usando fpdf2"""
+    """Gera um PDF usando matplotlib"""
 
-    class PDF(FPDF):
-        def header(self):
-            self.set_font('Arial', 'B', 16)
-            self.set_text_color(0, 104, 55)  # Verde Klabin
-            self.cell(0, 10, 'METODOLOGIA FELKLA - KLABIN', 0, 1, 'C')
-            self.ln(10)
+    buffer = io.BytesIO()
 
-        def footer(self):
-            self.set_y(-15)
-            self.set_font('Arial', 'I', 8)
-            self.set_text_color(128, 128, 128)
-            self.cell(0, 10, f'Página {self.page_no()}', 0, 0, 'C')
+    with PdfPages(buffer) as pdf:
+        fig, ax = plt.subplots(figsize=(8.5, 11))
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.axis('off')
 
-    # Criar PDF
-    pdf = PDF()
-    pdf.add_page()
-    pdf.set_font('Arial', '', 10)
+        # Header
+        ax.text(0.5, 0.95, 'METODOLOGIA FELKLA - KLABIN',
+                ha='center', va='top', fontsize=16, fontweight='bold',
+                color='#006837')
 
-    # Processar texto linha por linha
-    linhas = relatorio_texto.split('\n')
+        # Linha separadora
+        ax.plot([0.1, 0.9], [0.92, 0.92], color='#006837', linewidth=2)
 
-    for linha in linhas:
-        linha = linha.strip()
+        # Processar texto
+        linhas = relatorio_texto.split('\n')
+        y_pos = 0.88
 
-        if not linha:
-            pdf.ln(5)
-            continue
+        for linha in linhas:
+            linha = linha.strip()
 
-        # Títulos principais
-        if linha.startswith('RELATÓRIO DE AVALIAÇÃO'):
-            pdf.set_font('Arial', 'B', 14)
-            pdf.set_text_color(0, 104, 55)
-            pdf.cell(0, 10, linha, 0, 1, 'C')
-            pdf.ln(5)
-            continue
+            if not linha:
+                y_pos -= 0.02
+                continue
 
-        # Separadores
-        elif linha.startswith('====='):
-            pdf.ln(3)
-            continue
+            if y_pos < 0.1:  # Nova página
+                pdf.savefig(fig, bbox_inches='tight', dpi=150)
+                plt.close(fig)
+                fig, ax = plt.subplots(figsize=(8.5, 11))
+                ax.set_xlim(0, 1)
+                ax.set_ylim(0, 1)
+                ax.axis('off')
 
-        # Seções (maiúsculas terminando com :)
-        elif linha.endswith(':') and linha.isupper():
-            pdf.set_font('Arial', 'B', 12)
-            pdf.set_text_color(0, 104, 55)
-            pdf.cell(0, 8, linha, 0, 1)
-            pdf.ln(2)
-            continue
-
-        # Texto normal
-        else:
-            pdf.set_font('Arial', '', 10)
-            pdf.set_text_color(0, 0, 0)
+                # Header da nova página
+                ax.text(0.5, 0.95, 'METODOLOGIA FELKLA - KLABIN',
+                        ha='center', va='top', fontsize=16, fontweight='bold',
+                        color='#006837')
+                ax.plot([0.1, 0.9], [0.92, 0.92], color='#006837', linewidth=2)
+                y_pos = 0.88
 
             # Quebrar linhas longas
-            if len(linha) > 80:
+            if len(linha) > 85:
                 words = linha.split(' ')
                 current_line = ""
 
                 for word in words:
-                    if len(current_line + word) < 80:
+                    if len(current_line + word) < 85:
                         current_line += word + " "
                     else:
                         if current_line:
-                            pdf.cell(0, 6, current_line.strip(), 0, 1)
+                            # Determinar estilo da linha
+                            if current_line.strip().startswith('RELATÓRIO DE AVALIAÇÃO'):
+                                ax.text(0.5, y_pos, current_line.strip(), ha='center', va='top',
+                                        fontsize=14, fontweight='bold', color='#006837')
+                                y_pos -= 0.04
+                            elif current_line.strip().endswith(':') and current_line.strip().isupper():
+                                ax.text(0.05, y_pos, current_line.strip(), ha='left', va='top',
+                                        fontsize=12, fontweight='bold', color='#006837')
+                                y_pos -= 0.03
+                            elif current_line.strip().startswith('-'):
+                                ax.text(0.08, y_pos, current_line.strip(), ha='left', va='top',
+                                        fontsize=10, color='black')
+                                y_pos -= 0.025
+                            elif not current_line.strip().startswith('====='):
+                                ax.text(0.05, y_pos, current_line.strip(), ha='left', va='top',
+                                        fontsize=10, color='black')
+                                y_pos -= 0.025
                         current_line = word + " "
 
                 if current_line:
-                    pdf.cell(0, 6, current_line.strip(), 0, 1)
+                    # Determinar estilo da linha final
+                    if current_line.strip().startswith('-'):
+                        ax.text(0.08, y_pos, current_line.strip(), ha='left', va='top',
+                                fontsize=10, color='black')
+                    else:
+                        ax.text(0.05, y_pos, current_line.strip(), ha='left', va='top',
+                                fontsize=10, color='black')
+                    y_pos -= 0.025
             else:
-                pdf.cell(0, 6, linha, 0, 1)
+                # Diferentes estilos para diferentes tipos de linha
+                if linha.startswith('RELATÓRIO DE AVALIAÇÃO'):
+                    ax.text(0.5, y_pos, linha, ha='center', va='top',
+                            fontsize=14, fontweight='bold', color='#006837')
+                    y_pos -= 0.04
+                elif linha.endswith(':') and linha.isupper():
+                    ax.text(0.05, y_pos, linha, ha='left', va='top',
+                            fontsize=12, fontweight='bold', color='#006837')
+                    y_pos -= 0.03
+                elif linha.startswith('-'):
+                    ax.text(0.08, y_pos, linha, ha='left', va='top',
+                            fontsize=10, color='black')
+                    y_pos -= 0.025
+                elif linha.startswith('====='):
+                    # Linha separadora
+                    ax.plot([0.1, 0.9], [y_pos, y_pos], color='#006837', linewidth=1)
+                    y_pos -= 0.03
+                else:
+                    ax.text(0.05, y_pos, linha, ha='left', va='top',
+                            fontsize=10, color='black')
+                    y_pos -= 0.025
 
-    # Retornar como bytes
-    return pdf.output(dest='S').encode('latin-1')
+        # Rodapé
+        ax.text(0.5, 0.05, f'Página {pdf.get_pagecount() + 1}',
+                ha='center', va='bottom', fontsize=8, color='gray')
+
+        pdf.savefig(fig, bbox_inches='tight', dpi=150)
+        plt.close(fig)
+
+    buffer.seek(0)
+    return buffer.getvalue()
 
 
 # Configuração da página com melhorias
@@ -251,6 +291,7 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
 # Header principal da aplicação
 st.markdown("""
 <div class="main-header">
@@ -282,26 +323,26 @@ with col_info1:
     )
 
     nome_avaliador = st.text_input(
-        "�� **Nome do Avaliador**",
+        "👤 **Nome do Avaliador**",
         placeholder="Ex: João Silva",
         help="Digite seu nome completo"
     )
 
 with col_info2:
     tipo_avaliacao = st.selectbox(
-        "📊 **Tipo de Avaliação**",
+        "�� **Tipo de Avaliação**",
         ["FELKLA-1", "FELKLA-2", "FELKLA-3"],
         help="Selecione qual fase da metodologia está sendo avaliada"
     )
 
     data_avaliacao = st.date_input(
-        "�� **Data da Avaliação**",
+        "📅 **Data da Avaliação**",
         help="Selecione a data da avaliação"
     )
 
 with col_info3:
     area_responsavel = st.text_input(
-        "🏢 **Área Responsável**",
+        "�� **Área Responsável**",
         placeholder="Ex: Engenharia Industrial",
         help="Digite a área ou departamento responsável pelo projeto"
     )
@@ -618,7 +659,7 @@ with aba_metodologia:
 
     with col2:
         st.markdown("""
-        **🎯 Objetivo Principal:**  
+        **�� Objetivo Principal:**  
         Definir completamente o projeto antes da execução, minimizando mudanças durante a construção.
 
         **📋 Principais Atividades:**
@@ -1233,7 +1274,7 @@ with aba1:
                 for ponto in pontos_críticos:
                     st.markdown(f"❌ {ponto}")
             else:
-                st.markdown("**🔴 Pontos Críticos**")
+                st.markdown("**�� Pontos Críticos**")
                 st.markdown("_Nenhum identificado_")
 
         # Próximos passos (FORA de todas as colunas)
@@ -1352,7 +1393,6 @@ with aba2:
     st.markdown("### 📊 Progresso do Questionário")
     progress_placeholder_2 = st.empty()
 
-
     # Função para contar respostas preenchidas FELKLA-2
     def contar_respostas_aba2():
         respostas = [q11_f2, q12_f2, q13_f2, q14_f2, q15_f2, q21_f2, q22_f2, q23_f2, q24_f2, q25_f2,
@@ -1360,7 +1400,6 @@ with aba2:
                      q51_f2, q52_f2, q53_f2, q54_f2, q55_f2]
         preenchidas = len([r for r in respostas if r is not None])
         return preenchidas, len(respostas)
-
 
     col1, col2 = st.columns([1, 1])
 
@@ -1641,8 +1680,9 @@ with aba2:
         if preenchidas_2 < total_2:
             st.info(f"💡 **Dica:** Responda todas as {total_2} questões para obter uma avaliação completa!")
 
-    # Aqui você pode continuar com o resto da implementação do FELKLA-2
-    # (cálculos, dashboard, relatório) seguindo o mesmo padrão do FELKLA-1
+    # Implementação básica de resultados para FELKLA-2
+    if preenchidas_2 > 0:
+        st.info("🚧 **FELKLA-2 em desenvolvimento:** Funcionalidade de cálculo e relatório será implementada em breve.")
 
 with aba3:
     # Header da aba com informações
@@ -1947,6 +1987,11 @@ with aba3:
 
         if preenchidas_3 < total_3:
             st.info(f"💡 **Dica:** Responda todas as {total_3} questões para obter uma avaliação completa!")
+
+    # Implementação básica de resultados para FELKLA-3
+    if preenchidas_3 > 0:
+        st.info("🚧 **FELKLA-3 em desenvolvimento:** Funcionalidade de cálculo e relatório será implementada em breve.")
+
 # Rodapé da aplicação
 st.markdown("---")
 st.markdown("""
