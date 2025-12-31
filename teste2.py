@@ -1,127 +1,4 @@
 import streamlit as st
-from datetime import date, datetime
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-from matplotlib.backends.backend_pdf import PdfPages
-import io
-
-
-def gerar_pdf_relatorio(relatorio_texto, nome_arquivo):
-    """Gera um PDF usando matplotlib"""
-
-    buffer = io.BytesIO()
-
-    with PdfPages(buffer) as pdf:
-        fig, ax = plt.subplots(figsize=(8.5, 11))
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
-        ax.axis('off')
-
-        # Header
-        ax.text(0.5, 0.95, 'METODOLOGIA FELKLA - KLABIN',
-                ha='center', va='top', fontsize=16, fontweight='bold',
-                color='#006837')
-
-        # Linha separadora
-        ax.plot([0.1, 0.9], [0.92, 0.92], color='#006837', linewidth=2)
-
-        # Processar texto
-        linhas = relatorio_texto.split('\n')
-        y_pos = 0.88
-
-        for linha in linhas:
-            linha = linha.strip()
-
-            if not linha:
-                y_pos -= 0.02
-                continue
-
-            if y_pos < 0.1:  # Nova página
-                pdf.savefig(fig, bbox_inches='tight', dpi=150)
-                plt.close(fig)
-                fig, ax = plt.subplots(figsize=(8.5, 11))
-                ax.set_xlim(0, 1)
-                ax.set_ylim(0, 1)
-                ax.axis('off')
-
-                # Header da nova página
-                ax.text(0.5, 0.95, 'METODOLOGIA FELKLA - KLABIN',
-                        ha='center', va='top', fontsize=16, fontweight='bold',
-                        color='#006837')
-                ax.plot([0.1, 0.9], [0.92, 0.92], color='#006837', linewidth=2)
-                y_pos = 0.88
-
-            # Quebrar linhas longas
-            if len(linha) > 85:
-                words = linha.split(' ')
-                current_line = ""
-
-                for word in words:
-                    if len(current_line + word) < 85:
-                        current_line += word + " "
-                    else:
-                        if current_line:
-                            # Determinar estilo da linha
-                            if current_line.strip().startswith('RELATÓRIO DE AVALIAÇÃO'):
-                                ax.text(0.5, y_pos, current_line.strip(), ha='center', va='top',
-                                        fontsize=14, fontweight='bold', color='#006837')
-                                y_pos -= 0.04
-                            elif current_line.strip().endswith(':') and current_line.strip().isupper():
-                                ax.text(0.05, y_pos, current_line.strip(), ha='left', va='top',
-                                        fontsize=12, fontweight='bold', color='#006837')
-                                y_pos -= 0.03
-                            elif current_line.strip().startswith('-'):
-                                ax.text(0.08, y_pos, current_line.strip(), ha='left', va='top',
-                                        fontsize=10, color='black')
-                                y_pos -= 0.025
-                            elif not current_line.strip().startswith('====='):
-                                ax.text(0.05, y_pos, current_line.strip(), ha='left', va='top',
-                                        fontsize=10, color='black')
-                                y_pos -= 0.025
-                        current_line = word + " "
-
-                if current_line:
-                    # Determinar estilo da linha final
-                    if current_line.strip().startswith('-'):
-                        ax.text(0.08, y_pos, current_line.strip(), ha='left', va='top',
-                                fontsize=10, color='black')
-                    else:
-                        ax.text(0.05, y_pos, current_line.strip(), ha='left', va='top',
-                                fontsize=10, color='black')
-                    y_pos -= 0.025
-            else:
-                # Diferentes estilos para diferentes tipos de linha
-                if linha.startswith('RELATÓRIO DE AVALIAÇÃO'):
-                    ax.text(0.5, y_pos, linha, ha='center', va='top',
-                            fontsize=14, fontweight='bold', color='#006837')
-                    y_pos -= 0.04
-                elif linha.endswith(':') and linha.isupper():
-                    ax.text(0.05, y_pos, linha, ha='left', va='top',
-                            fontsize=12, fontweight='bold', color='#006837')
-                    y_pos -= 0.03
-                elif linha.startswith('-'):
-                    ax.text(0.08, y_pos, linha, ha='left', va='top',
-                            fontsize=10, color='black')
-                    y_pos -= 0.025
-                elif linha.startswith('====='):
-                    # Linha separadora
-                    ax.plot([0.1, 0.9], [y_pos, y_pos], color='#006837', linewidth=1)
-                    y_pos -= 0.03
-                else:
-                    ax.text(0.05, y_pos, linha, ha='left', va='top',
-                            fontsize=10, color='black')
-                    y_pos -= 0.025
-
-        # Rodapé
-        ax.text(0.5, 0.05, f'Página {pdf.get_pagecount() + 1}',
-                ha='center', va='bottom', fontsize=8, color='gray')
-
-        pdf.savefig(fig, bbox_inches='tight', dpi=150)
-        plt.close(fig)
-
-    buffer.seek(0)
-    return buffer.getvalue()
-
 
 # Configuração da página com melhorias
 st.set_page_config(
@@ -300,68 +177,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# NOVO: Seção de identificação do projeto
-st.markdown("""
-<div style="background: linear-gradient(135deg, #e8f5e8 0%, #ffffff 100%); 
-            padding: 1.5rem; border-radius: 10px; margin: 2rem 0; 
-            border-left: 5px solid #006837;">
-    <h3 style="color: #006837; margin: 0;">📋 IDENTIFICAÇÃO DO PROJETO</h3>
-    <p style="color: #2d5016; margin: 0.5rem 0 0 0;">
-        Preencha as informações básicas para identificação da avaliação
-    </p>
-</div>
-""", unsafe_allow_html=True)
-
-# Formulário de identificação
-col_info1, col_info2, col_info3 = st.columns(3)
-
-with col_info1:
-    nome_projeto = st.text_input(
-        "🏗️ **Nome do Projeto**",
-        placeholder="Ex: Modernização Linha de Produção 3",
-        help="Digite o nome completo do projeto que está sendo avaliado"
-    )
-
-    nome_avaliador = st.text_input(
-        "👤 **Nome do Avaliador**",
-        placeholder="Ex: João Silva",
-        help="Digite seu nome completo"
-    )
-
-with col_info2:
-    tipo_avaliacao = st.selectbox(
-        "�� **Tipo de Avaliação**",
-        ["FELKLA-1", "FELKLA-2", "FELKLA-3"],
-        help="Selecione qual fase da metodologia está sendo avaliada"
-    )
-
-    data_avaliacao = st.date_input(
-        "📅 **Data da Avaliação**",
-        help="Selecione a data da avaliação"
-    )
-
-with col_info3:
-    area_responsavel = st.text_input(
-        "�� **Área Responsável**",
-        placeholder="Ex: Engenharia Industrial",
-        help="Digite a área ou departamento responsável pelo projeto"
-    )
-
-    codigo_projeto = st.text_input(
-        "🔢 **Código do Projeto** (opcional)",
-        placeholder="Ex: PROJ-2024-001",
-        help="Digite o código interno do projeto, se houver"
-    )
-
-# Validação dos campos obrigatórios
-campos_obrigatorios_preenchidos = bool(nome_projeto and nome_avaliador and tipo_avaliacao and data_avaliacao)
-
-if not campos_obrigatorios_preenchidos:
-    st.warning(
-        "⚠️ **Atenção:** Preencha pelo menos o nome do projeto, nome do avaliador e tipo de avaliação para continuar.")
-
-st.markdown("---")
-
 # Seção de critérios de avaliação expansível
 with st.expander("📋 **CRITÉRIOS DETALHADOS DE AVALIAÇÃO FELKLA**", expanded=False):
     st.markdown("""
@@ -475,7 +290,7 @@ with st.expander("📋 **CRITÉRIOS DETALHADOS DE AVALIAÇÃO FELKLA**", expande
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
             <div>
                 <p><strong>🎯 Seja Objetivo:</strong><br>Base sua avaliação em evidências concretas e documentadas</p>
-                <p><strong>�� Documente:</strong><br>Mantenha registros das evidências utilizadas na avaliação</p>
+                <p><strong>📝 Documente:</strong><br>Mantenha registros das evidências utilizadas na avaliação</p>
             </div>
             <div>
                 <p><strong>🔄 Revise:</strong><br>Reavalie periodicamente conforme o projeto evolui</p>
@@ -514,7 +329,7 @@ def calcular_pontuacao(resposta):
     else:
         return 0
 
-# Criação das abas
+
 aba_metodologia, aba1, aba2, aba3 = st.tabs([
     "📚 **METODOLOGIA**",
     "🔍 **FELKLA-1**",
@@ -614,7 +429,7 @@ with aba_metodologia:
 
     with col2:
         st.markdown("""
-        **🎯 Objetivo Principal:**  
+        **�� Objetivo Principal:**  
         Selecionar a melhor alternativa técnica e desenvolver o conceito básico do projeto.
 
         **📋 Principais Atividades:**
@@ -659,7 +474,7 @@ with aba_metodologia:
 
     with col2:
         st.markdown("""
-        **�� Objetivo Principal:**  
+        **🎯 Objetivo Principal:**  
         Definir completamente o projeto antes da execução, minimizando mudanças durante a construção.
 
         **📋 Principais Atividades:**
@@ -1039,23 +854,16 @@ with aba1:
 
     st.markdown('<hr class="custom-divider">', unsafe_allow_html=True)
     # Seção de resultados melhorada
-    st.markdown(f"""
-    <div style="background: linear-gradient(135deg, #f0f8f0 0%, #ffffff 100%); 
-                padding: 1.5rem; border-radius: 10px; margin: 2rem 0; 
-                border-left: 5px solid #006837;">
-        <h2 style="color: #006837; margin: 0;">📊 RELATÓRIO FELKLA-1</h2>
-        <p style="color: #2d5016; margin: 0.5rem 0; font-size: 1.1rem;">
-            Análise detalhada da viabilidade e oportunidades do projeto
-        </p>
-        <div style="margin-top: 1rem; color: #2d5016;">
-            <p style="margin: 0.3rem 0;"><strong>Projeto:</strong> {nome_projeto or 'Não informado'}</p>
-            <p style="margin: 0.3rem 0;"><strong>Avaliador:</strong> {nome_avaliador or 'Não informado'}</p>
-            <p style="margin: 0.3rem 0;"><strong>Data:</strong> {data_avaliacao.strftime('%d/%m/%Y') if data_avaliacao else 'Não informada'}</p>
-            <p style="margin: 0.3rem 0;"><strong>Área:</strong> {area_responsavel or 'Não informada'}</p>
-            {f'<p style="margin: 0.3rem 0;"><strong>Código:</strong> {codigo_projeto}</p>' if codigo_projeto else ''}
+    st.markdown("""
+        <div style="background: linear-gradient(135deg, #f0f8f0 0%, #ffffff 100%); 
+                    padding: 1.5rem; border-radius: 10px; margin: 2rem 0; 
+                    border-left: 5px solid #006837;">
+            <h2 style="color: #006837; margin: 0;">📊 RESULTADO FELKLA-1</h2>
+            <p style="color: #2d5016; margin: 0.5rem 0 0 0; font-size: 1.1rem;">
+                Análise detalhada da viabilidade e oportunidades do projeto
+            </p>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
     # Verificar se todas as questões foram respondidas
     todas_respostas = [q11, q12, q13, q14, q15, q21, q22, q23, q24, q25,
@@ -1202,7 +1010,7 @@ with aba1:
                     """, unsafe_allow_html=True)
 
         with col_interpretation:
-            st.markdown("#### 🎯 Interpretação dos Resultados")
+            st.markdown("#### �� Interpretação dos Resultados")
 
             if score_final >= 80:
                 st.success("""
@@ -1274,10 +1082,10 @@ with aba1:
                 for ponto in pontos_críticos:
                     st.markdown(f"❌ {ponto}")
             else:
-                st.markdown("**�� Pontos Críticos**")
+                st.markdown("**🔴 Pontos Críticos**")
                 st.markdown("_Nenhum identificado_")
 
-        # Próximos passos (FORA de todas as colunas)
+        # Próximos passos
         st.markdown("#### 🚀 Próximos Passos Recomendados")
 
         if score_final >= 80:
@@ -1302,80 +1110,6 @@ with aba1:
                 4. **Documentar lições aprendidas** para projetos futuros
                 """)
 
-        # Download do Relatório FELKLA-1
-        st.markdown("---")
-
-        # Verificar se campos obrigatórios estão preenchidos
-        campos_obrigatorios_preenchidos = bool(nome_projeto and nome_avaliador and data_avaliacao and area_responsavel)
-
-        if campos_obrigatorios_preenchidos:
-            # Gerar relatório em texto
-            relatorio_texto = f"""
-RELATÓRIO DE AVALIAÇÃO FELKLA-1
-=====================================
-
-IDENTIFICAÇÃO DO PROJETO:
-- Nome do Projeto: {nome_projeto}
-- Avaliador: {nome_avaliador}
-- Data da Avaliação: {data_avaliacao.strftime('%d/%m/%Y')}
-- Área Responsável: {area_responsavel}
-{f'- Código do Projeto: {codigo_projeto}' if codigo_projeto else ''}
-
-RESULTADO DA AVALIAÇÃO:
-- Score Final: {score_final:.1f}%
-- Status: {'APROVADO' if score_final >= 80 else 'ATENÇÃO' if score_final >= 60 else 'NÃO APROVADO'}
-- Questões Respondidas: {len(respostas_preenchidas)}/{len(todas_respostas)}
-
-DETALHAMENTO POR DIMENSÃO:
-- Definição da Oportunidade: {score_def:.1f}%
-- Viabilidade Técnica: {score_tec:.1f}%
-- Viabilidade Econômica: {score_eco:.1f}%
-- Aspectos Ambientais: {score_amb:.1f}%
-- Riscos e Cronograma: {score_risco:.1f}%
-
-ANÁLISE:
-- Pontos Fortes: {', '.join(pontos_fortes) if pontos_fortes else 'Nenhum identificado'}
-- Pontos de Atenção: {', '.join(pontos_atenção) if pontos_atenção else 'Nenhum identificado'}
-- Pontos Críticos: {', '.join(pontos_críticos) if pontos_críticos else 'Nenhum identificado'}
-
-PRÓXIMOS PASSOS:
-{'- Prosseguir para FELKLA-2' if score_final >= 80 else '- Melhorar áreas críticas identificadas' if score_final >= 60 else '- Revisar fundamentação do projeto'}
-
-Relatório gerado automaticamente pela Metodologia FELKLA - Klabin
-Data de geração: {data_avaliacao.strftime('%d/%m/%Y') if data_avaliacao else 'Não informada'}
-            """
-
-            try:
-                # Gerar PDF
-                nome_arquivo = f"Relatorio_FELKLA-1_{nome_projeto.replace(' ', '_') if nome_projeto else 'Projeto'}_{data_avaliacao.strftime('%Y%m%d') if data_avaliacao else 'SemData'}.pdf"
-                pdf_bytes = gerar_pdf_relatorio(relatorio_texto, nome_arquivo)
-
-                st.markdown("#### 📥 Download do Relatório")
-                col_download1, col_download2 = st.columns(2)
-
-                with col_download1:
-                    st.download_button(
-                        label="📄 Download Relatório FELKLA-1 (.pdf)",
-                        data=pdf_bytes,
-                        file_name=nome_arquivo,
-                        mime="application/pdf"
-                    )
-
-                with col_download2:
-                    st.button("📧 Enviar por Email", help="Funcionalidade em desenvolvimento")
-
-            except Exception as e:
-                st.error(f"Erro ao gerar PDF: {e}")
-                # Fallback para TXT
-                st.download_button(
-                    label="📄 Download Relatório FELKLA-1 (.txt)",
-                    data=relatorio_texto,
-                    file_name=f"Relatorio_FELKLA-1_{nome_projeto.replace(' ', '_') if nome_projeto else 'Projeto'}_{data_avaliacao.strftime('%Y%m%d') if data_avaliacao else 'SemData'}.txt",
-                    mime="text/plain"
-                )
-        else:
-            st.info("💡 **Dica:** Preencha as informações do projeto no topo da página para habilitar o download do relatório.")
-
 with aba2:
     # Header da aba com informações
     st.markdown("""
@@ -1393,6 +1127,7 @@ with aba2:
     st.markdown("### 📊 Progresso do Questionário")
     progress_placeholder_2 = st.empty()
 
+
     # Função para contar respostas preenchidas FELKLA-2
     def contar_respostas_aba2():
         respostas = [q11_f2, q12_f2, q13_f2, q14_f2, q15_f2, q21_f2, q22_f2, q23_f2, q24_f2, q25_f2,
@@ -1400,6 +1135,7 @@ with aba2:
                      q51_f2, q52_f2, q53_f2, q54_f2, q55_f2]
         preenchidas = len([r for r in respostas if r is not None])
         return preenchidas, len(respostas)
+
 
     col1, col2 = st.columns([1, 1])
 
@@ -1680,9 +1416,292 @@ with aba2:
         if preenchidas_2 < total_2:
             st.info(f"💡 **Dica:** Responda todas as {total_2} questões para obter uma avaliação completa!")
 
-    # Implementação básica de resultados para FELKLA-2
-    if preenchidas_2 > 0:
-        st.info("🚧 **FELKLA-2 em desenvolvimento:** Funcionalidade de cálculo e relatório será implementada em breve.")
+    st.markdown('<hr class="custom-divider">', unsafe_allow_html=True)
+    # Seção de resultados melhorada FELKLA-2
+    st.markdown("""
+        <div style="background: linear-gradient(135deg, #f0f8f0 0%, #ffffff 100%); 
+                    padding: 1.5rem; border-radius: 10px; margin: 2rem 0; 
+                    border-left: 5px solid #006837;">
+            <h2 style="color: #006837; margin: 0;">📊 RESULTADO FELKLA-2</h2>
+            <p style="color: #2d5016; margin: 0.5rem 0 0 0; font-size: 1.1rem;">
+                Análise da seleção e desenvolvimento de alternativas técnicas
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Verificar se todas as questões foram respondidas
+    todas_respostas_f2 = [q11_f2, q12_f2, q13_f2, q14_f2, q15_f2, q21_f2, q22_f2, q23_f2, q24_f2, q25_f2,
+                          q31_f2, q32_f2, q33_f2, q34_f2, q35_f2, q41_f2, q42_f2, q43_f2, q44_f2, q45_f2,
+                          q51_f2, q52_f2, q53_f2, q54_f2, q55_f2]
+
+    respostas_preenchidas_f2 = [r for r in todas_respostas_f2 if r is not None]
+
+    # Inicializar variáveis
+    calcular_resultado_f2 = False
+
+    if len(respostas_preenchidas_f2) == 0:
+        st.info("🔍 **Responda as questões acima para gerar o resultado da avaliação FELKLA-2**")
+
+    elif len(respostas_preenchidas_f2) < len(todas_respostas_f2):
+        col_aviso1, col_aviso2 = st.columns([2, 1])
+        with col_aviso1:
+            st.warning(
+                f"⚠️ **Atenção:** {len(todas_respostas_f2) - len(respostas_preenchidas_f2)} questões ainda não foram respondidas. Para uma avaliação completa, responda todas as questões.")
+        with col_aviso2:
+            calcular_resultado_f2 = st.button("📊 Calcular Resultado Parcial FELKLA-2", type="secondary")
+
+    else:
+        # Todas as questões respondidas
+        calcular_resultado_f2 = st.button("🚀 Calcular Resultado Completo FELKLA-2", type="primary")
+
+    if calcular_resultado_f2:
+        # Cálculos dos scores FELKLA-2
+        # Desenvolvimento Técnico (30%)
+        dev_tec = [q11_f2, q12_f2, q13_f2, q14_f2, q15_f2]
+        pontos_dev = sum([calcular_pontuacao(resp) for resp in dev_tec if resp is not None])
+        max_pontos_dev = len([resp for resp in dev_tec if resp is not None]) * 5
+        score_dev = (pontos_dev / max_pontos_dev * 100) if max_pontos_dev > 0 else 0
+
+        # Seleção de Soluções (25%)
+        sel_sol = [q21_f2, q22_f2, q23_f2, q24_f2, q25_f2]
+        pontos_sel = sum([calcular_pontuacao(resp) for resp in sel_sol if resp is not None])
+        max_pontos_sel = len([resp for resp in sel_sol if resp is not None]) * 5
+        score_sel = (pontos_sel / max_pontos_sel * 100) if max_pontos_sel > 0 else 0
+
+        # Planejamento e Layout (20%)
+        plan_lay = [q31_f2, q32_f2, q33_f2, q34_f2, q35_f2]
+        pontos_plan = sum([calcular_pontuacao(resp) for resp in plan_lay if resp is not None])
+        max_pontos_plan = len([resp for resp in plan_lay if resp is not None]) * 5
+        score_plan = (pontos_plan / max_pontos_plan * 100) if max_pontos_plan > 0 else 0
+
+        # Aspectos Ambientais e Sociais (15%)
+        asp_amb_soc = [q41_f2, q42_f2, q43_f2, q44_f2, q45_f2]
+        pontos_amb_soc = sum([calcular_pontuacao(resp) for resp in asp_amb_soc if resp is not None])
+        max_pontos_amb_soc = len([resp for resp in asp_amb_soc if resp is not None]) * 5
+        score_amb_soc = (pontos_amb_soc / max_pontos_amb_soc * 100) if max_pontos_amb_soc > 0 else 0
+
+        # Estimativas e Gestão de Riscos (10%)
+        est_risco = [q51_f2, q52_f2, q53_f2, q54_f2, q55_f2]
+        pontos_est = sum([calcular_pontuacao(resp) for resp in est_risco if resp is not None])
+        max_pontos_est = len([resp for resp in est_risco if resp is not None]) * 5
+        score_est = (pontos_est / max_pontos_est * 100) if max_pontos_est > 0 else 0
+
+        # Score Final Ponderado
+        score_final_f2 = (score_dev * 0.30 + score_sel * 0.25 + score_plan * 0.20 +
+                          score_amb_soc * 0.15 + score_est * 0.10)
+
+        # Dashboard de resultados
+        st.markdown("### 📈 Dashboard de Resultados FELKLA-2")
+
+        # Métricas principais em cards
+        col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
+
+        with col_m1:
+            delta_dev = "🎯" if score_dev >= 80 else "⚠️" if score_dev >= 60 else "❌"
+            st.metric(
+                "Desenvolvimento Técnico",
+                f"{score_dev:.1f}%",
+                delta=f"Peso: 30% {delta_dev}"
+            )
+
+        with col_m2:
+            delta_sel = "🎯" if score_sel >= 80 else "⚠️" if score_sel >= 60 else "❌"
+            st.metric(
+                "Seleção de Soluções",
+                f"{score_sel:.1f}%",
+                delta=f"Peso: 25% {delta_sel}"
+            )
+
+        with col_m3:
+            delta_plan = "🎯" if score_plan >= 80 else "⚠️" if score_plan >= 60 else "❌"
+            st.metric(
+                "Planejamento e Layout",
+                f"{score_plan:.1f}%",
+                delta=f"Peso: 20% {delta_plan}"
+            )
+
+        with col_m4:
+            delta_amb_soc = "🎯" if score_amb_soc >= 80 else "⚠️" if score_amb_soc >= 60 else "❌"
+            st.metric(
+                "Aspectos Ambientais/Sociais",
+                f"{score_amb_soc:.1f}%",
+                delta=f"Peso: 15% {delta_amb_soc}"
+            )
+
+        with col_m5:
+            delta_est = "🎯" if score_est >= 80 else "⚠️" if score_est >= 60 else "❌"
+            st.metric(
+                "Estimativas e Riscos",
+                f"{score_est:.1f}%",
+                delta=f"Peso: 10% {delta_est}"
+            )
+
+        st.markdown('<hr class="custom-divider">', unsafe_allow_html=True)
+
+        # Score final destacado
+        col_score, col_interpretation = st.columns([1, 2])
+
+        with col_score:
+            if score_final_f2 >= 80:
+                st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); 
+                                padding: 2rem; border-radius: 15px; text-align: center; 
+                                border: 3px solid #006837; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                        <h1 style="color: #006837; margin: 0; font-size: 3rem;">{score_final_f2:.1f}%</h1>
+                        <h3 style="color: #155724; margin: 0.5rem 0;">✅ APROVADO</h3>
+                        <p style="color: #155724; margin: 0;">Projeto pronto para FELKLA-3</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+            elif score_final_f2 >= 60:
+                st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); 
+                                padding: 2rem; border-radius: 15px; text-align: center; 
+                                border: 3px solid #ffc107; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                        <h1 style="color: #856404; margin: 0; font-size: 3rem;">{score_final_f2:.1f}%</h1>
+                        <h3 style="color: #856404; margin: 0.5rem 0;">⚠️ ATENÇÃO</h3>
+                        <p style="color: #856404; margin: 0;">Projeto necessita melhorias</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); 
+                                padding: 2rem; border-radius: 15px; text-align: center; 
+                                border: 3px solid #dc3545; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                        <h1 style="color: #721c24; margin: 0; font-size: 3rem;">{score_final_f2:.1f}%</h1>
+                        <h3 style="color: #721c24; margin: 0.5rem 0;">❌ NÃO APROVADO</h3>
+                        <p style="color: #721c24; margin: 0;">Projeto não recomendado</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+        with col_interpretation:
+            st.markdown("#### 🎯 Interpretação dos Resultados")
+
+            if score_final_f2 >= 80:
+                st.success("""
+                    **Excelente! Projeto aprovado para FELKLA-3**
+
+                    ✅ **Recomendações:**
+                    - Prosseguir para fase de definição do projeto
+                    - Manter qualidade dos estudos técnicos
+                    - Finalizar seleção de fornecedores
+                    """)
+            elif score_final_f2 >= 60:
+                st.warning("""
+                    **Projeto viável com melhorias necessárias**
+
+                    ⚠️ **Ações recomendadas:**
+                    - Aprofundar desenvolvimento técnico
+                    - Revisar critérios de seleção
+                    - Melhorar planejamento de layout
+                    """)
+            else:
+                st.error("""
+                    **Projeto não recomendado para próxima fase**
+
+                    ❌ **Ações necessárias:**
+                    - Revisar alternativas técnicas
+                    - Reavaliar viabilidade das soluções
+                    - Considerar retorno ao FELKLA-1
+                    """)
+
+        # Análise detalhada por dimensão
+        st.markdown("#### 📊 Análise Detalhada por Dimensão")
+
+        # Identificar pontos fortes e fracos
+        scores_f2 = {
+            "Desenvolvimento Técnico": score_dev,
+            "Seleção de Soluções": score_sel,
+            "Planejamento e Layout": score_plan,
+            "Aspectos Ambientais/Sociais": score_amb_soc,
+            "Estimativas e Riscos": score_est
+        }
+
+        pontos_fortes_f2 = [k for k, v in scores_f2.items() if v >= 80]
+        pontos_atenção_f2 = [k for k, v in scores_f2.items() if 60 <= v < 80]
+        pontos_críticos_f2 = [k for k, v in scores_f2.items() if v < 60]
+
+        col_analise1, col_analise2, col_analise3 = st.columns(3)
+
+        with col_analise1:
+            if pontos_fortes_f2:
+                st.markdown("**🟢 Pontos Fortes**")
+                for ponto in pontos_fortes_f2:
+                    st.markdown(f"✅ {ponto}")
+            else:
+                st.markdown("**🟢 Pontos Fortes**")
+                st.markdown("_Nenhum identificado_")
+
+        with col_analise2:
+            if pontos_atenção_f2:
+                st.markdown("**🟡 Necessita Atenção**")
+                for ponto in pontos_atenção_f2:
+                    st.markdown(f"⚠️ {ponto}")
+            else:
+                st.markdown("**🟡 Necessita Atenção**")
+                st.markdown("_Nenhum identificado_")
+
+        with col_analise3:
+            if pontos_críticos_f2:
+                st.markdown("**🔴 Pontos Críticos**")
+                for ponto in pontos_críticos_f2:
+                    st.markdown(f"❌ {ponto}")
+            else:
+                st.markdown("**🔴 Pontos Críticos**")
+                st.markdown("_Nenhum identificado_")
+
+        # Comparação com FELKLA-1 (se disponível)
+        st.markdown("#### 📈 Evolução do Projeto")
+
+        # Aqui você pode adicionar uma comparação se tiver os dados do FELKLA-1
+        st.info("""
+            💡 **Dica:** Compare os resultados com a avaliação FELKLA-1 para verificar a evolução do projeto.
+
+            **Principais focos desta fase:**
+            - Desenvolvimento técnico detalhado
+            - Seleção definitiva de soluções
+            - Planejamento de implementação
+            """)
+
+        # Próximos passos
+        st.markdown("#### 🚀 Próximos Passos Recomendados")
+
+        if score_final_f2 >= 80:
+            st.info("""
+                1. **Finalizar especificações técnicas** detalhadas
+                2. **Preparar documentação** para FELKLA-3
+                3. **Confirmar contratos** com fornecedores selecionados
+                4. **Iniciar estudos** de engenharia de detalhe
+                """)
+        elif score_final_f2 >= 60:
+            st.warning("""
+                1. **Aprofundar desenvolvimento** nas áreas críticas
+                2. **Revisar critérios** de seleção de soluções
+                3. **Melhorar integração** com operações existentes
+                4. **Reavaliar** após implementação das melhorias
+                """)
+        else:
+            st.error("""
+                1. **Revisar alternativas** técnicas propostas
+                2. **Reavaliar viabilidade** das soluções selecionadas
+                3. **Considerar retorno** ao FELKLA-1 para revisão
+                4. **Buscar suporte técnico** especializado
+                """)
+
+        # Resumo executivo
+        st.markdown("#### 📋 Resumo Executivo")
+
+        resumo_color = "#d4edda" if score_final_f2 >= 80 else "#fff3cd" if score_final_f2 >= 60 else "#f8d7da"
+        resumo_border = "#006837" if score_final_f2 >= 80 else "#ffc107" if score_final_f2 >= 60 else "#dc3545"
+
+        st.markdown(f"""
+            <div style="background: {resumo_color}; padding: 1.5rem; border-radius: 10px; 
+                        border-left: 4px solid {resumo_border}; margin: 1rem 0;">
+                <h4 style="margin-top: 0;">📊 Score Final: {score_final_f2:.1f}%</h4>
+                <p><strong>Melhor dimensão:</strong> {max(scores_f2, key=scores_f2.get)} ({max(scores_f2.values()):.1f}%)</p>
+                <p><strong>Dimensão crítica:</strong> {min(scores_f2, key=scores_f2.get)} ({min(scores_f2.values()):.1f}%)</p>
+                <p><strong>Questões respondidas:</strong> {len(respostas_preenchidas_f2)}/{len(todas_respostas_f2)}</p>
+            </div>
+            """, unsafe_allow_html=True)
 
 with aba3:
     # Header da aba com informações
@@ -1701,6 +1720,7 @@ with aba3:
     st.markdown("### 📊 Progresso do Questionário")
     progress_placeholder_3 = st.empty()
 
+
     # Função para contar respostas preenchidas FELKLA-3
     def contar_respostas_aba3():
         respostas = [q11_f3, q12_f3, q13_f3, q14_f3, q15_f3, q21_f3, q22_f3, q23_f3, q24_f3, q25_f3,
@@ -1708,6 +1728,7 @@ with aba3:
                      q51_f3, q52_f3, q53_f3, q54_f3, q55_f3]
         preenchidas = len([r for r in respostas if r is not None])
         return preenchidas, len(respostas)
+
 
     col1, col2 = st.columns([1, 1])
 
@@ -1988,21 +2009,317 @@ with aba3:
         if preenchidas_3 < total_3:
             st.info(f"💡 **Dica:** Responda todas as {total_3} questões para obter uma avaliação completa!")
 
-    # Implementação básica de resultados para FELKLA-3
-    if preenchidas_3 > 0:
-        st.info("🚧 **FELKLA-3 em desenvolvimento:** Funcionalidade de cálculo e relatório será implementada em breve.")
+    st.markdown('<hr class="custom-divider">', unsafe_allow_html=True)
+    # Seção de resultados melhorada FELKLA-3
+    st.markdown("""
+        <div style="background: linear-gradient(135deg, #f0f8f0 0%, #ffffff 100%); 
+                    padding: 1.5rem; border-radius: 10px; margin: 2rem 0; 
+                    border-left: 5px solid #006837;">
+            <h2 style="color: #006837; margin: 0;">📊 RESULTADO FELKLA-3</h2>
+            <p style="color: #2d5016; margin: 0.5rem 0 0 0; font-size: 1.1rem;">
+                Análise final de prontidão para execução do projeto
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
-# Rodapé da aplicação
-st.markdown("---")
-st.markdown("""
-<div style="text-align: center; padding: 2rem; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); 
-            border-radius: 10px; margin-top: 2rem;">
-    <p style="color: #6c757d; margin: 0;">
-        <strong>🌲 Metodologia FELKLA</strong> | Desenvolvido para Klabin | 
-        Versão 1.0 | © 2024
-    </p>
-    <p style="color: #6c757d; margin: 0.5rem 0 0 0; font-size: 0.9rem;">
-        Sistema de Avaliação e Gestão de Projetos para o Setor de Papel e Celulose
-    </p>
-</div>
-""", unsafe_allow_html=True)
+    # Verificar se todas as questões foram respondidas
+    todas_respostas_f3 = [q11_f3, q12_f3, q13_f3, q14_f3, q15_f3, q21_f3, q22_f3, q23_f3, q24_f3, q25_f3,
+                          q31_f3, q32_f3, q33_f3, q34_f3, q35_f3, q41_f3, q42_f3, q43_f3, q44_f3, q45_f3,
+                          q51_f3, q52_f3, q53_f3, q54_f3, q55_f3]
+
+    respostas_preenchidas_f3 = [r for r in todas_respostas_f3 if r is not None]
+
+    # Inicializar variáveis
+    calcular_resultado_f3 = False
+
+    if len(respostas_preenchidas_f3) == 0:
+        st.info("🔍 **Responda as questões acima para gerar o resultado da avaliação FELKLA-3**")
+
+    elif len(respostas_preenchidas_f3) < len(todas_respostas_f3):
+        col_aviso1, col_aviso2 = st.columns([2, 1])
+        with col_aviso1:
+            st.warning(
+                f"⚠️ **Atenção:** {len(todas_respostas_f3) - len(respostas_preenchidas_f3)} questões ainda não foram respondidas. Para uma avaliação completa, responda todas as questões.")
+        with col_aviso2:
+            calcular_resultado_f3 = st.button("📊 Calcular Resultado Parcial FELKLA-3", type="secondary")
+
+    else:
+        # Todas as questões respondidas
+        calcular_resultado_f3 = st.button("🚀 Calcular Resultado Completo FELKLA-3", type="primary")
+
+    if calcular_resultado_f3:
+        # Cálculos dos scores FELKLA-3
+        # Engenharia e Especificações (35%)
+        eng_esp = [q11_f3, q12_f3, q13_f3, q14_f3, q15_f3]
+        pontos_eng = sum([calcular_pontuacao(resp) for resp in eng_esp if resp is not None])
+        max_pontos_eng = len([resp for resp in eng_esp if resp is not None]) * 5
+        score_eng = (pontos_eng / max_pontos_eng * 100) if max_pontos_eng > 0 else 0
+
+        # Contratação e Suprimentos (25%)
+        cont_sup = [q21_f3, q22_f3, q23_f3, q24_f3, q25_f3]
+        pontos_cont = sum([calcular_pontuacao(resp) for resp in cont_sup if resp is not None])
+        max_pontos_cont = len([resp for resp in cont_sup if resp is not None]) * 5
+        score_cont = (pontos_cont / max_pontos_cont * 100) if max_pontos_cont > 0 else 0
+
+        # Licenciamento e Conformidade (20%)
+        lic_conf = [q31_f3, q32_f3, q33_f3, q34_f3, q35_f3]
+        pontos_lic = sum([calcular_pontuacao(resp) for resp in lic_conf if resp is not None])
+        max_pontos_lic = len([resp for resp in lic_conf if resp is not None]) * 5
+        score_lic = (pontos_lic / max_pontos_lic * 100) if max_pontos_lic > 0 else 0
+
+        # Planos de Execução (15%)
+        plan_exec = [q41_f3, q42_f3, q43_f3, q44_f3, q45_f3]
+        pontos_plan_exec = sum([calcular_pontuacao(resp) for resp in plan_exec if resp is not None])
+        max_pontos_plan_exec = len([resp for resp in plan_exec if resp is not None]) * 5
+        score_plan_exec = (pontos_plan_exec / max_pontos_plan_exec * 100) if max_pontos_plan_exec > 0 else 0
+
+        # Controles e Riscos (5%)
+        cont_risco = [q51_f3, q52_f3, q53_f3, q54_f3, q55_f3]
+        pontos_cont_risco = sum([calcular_pontuacao(resp) for resp in cont_risco if resp is not None])
+        max_pontos_cont_risco = len([resp for resp in cont_risco if resp is not None]) * 5
+        score_cont_risco = (pontos_cont_risco / max_pontos_cont_risco * 100) if max_pontos_cont_risco > 0 else 0
+
+        # Score Final Ponderado
+        score_final_f3 = (score_eng * 0.35 + score_cont * 0.25 + score_lic * 0.20 +
+                          score_plan_exec * 0.15 + score_cont_risco * 0.05)
+
+        # Dashboard de resultados
+        st.markdown("### 📈 Dashboard de Resultados FELKLA-3")
+
+        # Métricas principais em cards
+        col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
+
+        with col_m1:
+            delta_eng = "🎯" if score_eng >= 80 else "⚠️" if score_eng >= 60 else "❌"
+            st.metric(
+                "Engenharia e Especificações",
+                f"{score_eng:.1f}%",
+                delta=f"Peso: 35% {delta_eng}"
+            )
+
+        with col_m2:
+            delta_cont = "🎯" if score_cont >= 80 else "⚠️" if score_cont >= 60 else "❌"
+            st.metric(
+                "Contratação e Suprimentos",
+                f"{score_cont:.1f}%",
+                delta=f"Peso: 25% {delta_cont}"
+            )
+
+        with col_m3:
+            delta_lic = "🎯" if score_lic >= 80 else "⚠️" if score_lic >= 60 else "❌"
+            st.metric(
+                "Licenciamento e Conformidade",
+                f"{score_lic:.1f}%",
+                delta=f"Peso: 20% {delta_lic}"
+            )
+
+        with col_m4:
+            delta_plan_exec = "🎯" if score_plan_exec >= 80 else "⚠️" if score_plan_exec >= 60 else "❌"
+            st.metric(
+                "Planos de Execução",
+                f"{score_plan_exec:.1f}%",
+                delta=f"Peso: 15% {delta_plan_exec}"
+            )
+
+        with col_m5:
+            delta_cont_risco = "🎯" if score_cont_risco >= 80 else "⚠️" if score_cont_risco >= 60 else "❌"
+            st.metric(
+                "Controles e Riscos",
+                f"{score_cont_risco:.1f}%",
+                delta=f"Peso: 5% {delta_cont_risco}"
+            )
+
+        st.markdown('<hr class="custom-divider">', unsafe_allow_html=True)
+
+        # Score final destacado
+        col_score, col_interpretation = st.columns([1, 2])
+
+        with col_score:
+            if score_final_f3 >= 80:
+                st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); 
+                                padding: 2rem; border-radius: 15px; text-align: center; 
+                                border: 3px solid #006837; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                        <h1 style="color: #006837; margin: 0; font-size: 3rem;">{score_final_f3:.1f}%</h1>
+                        <h3 style="color: #155724; margin: 0.5rem 0;">✅ PRONTO PARA EXECUÇÃO</h3>
+                        <p style="color: #155724; margin: 0;">Projeto aprovado para implementação</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+            elif score_final_f3 >= 60:
+                st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); 
+                                padding: 2rem; border-radius: 15px; text-align: center; 
+                                border: 3px solid #ffc107; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                        <h1 style="color: #856404; margin: 0; font-size: 3rem;">{score_final_f3:.1f}%</h1>
+                        <h3 style="color: #856404; margin: 0.5rem 0;">⚠️ ATENÇÃO</h3>
+                        <p style="color: #856404; margin: 0;">Projeto necessita melhorias</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); 
+                                padding: 2rem; border-radius: 15px; text-align: center; 
+                                border: 3px solid #dc3545; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                        <h1 style="color: #721c24; margin: 0; font-size: 3rem;">{score_final_f3:.1f}%</h1>
+                        <h3 style="color: #721c24; margin: 0.5rem 0;">❌ NÃO APROVADO</h3>
+                        <p style="color: #721c24; margin: 0;">Projeto não pronto para execução</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+        with col_interpretation:
+            st.markdown("#### 🎯 Interpretação dos Resultados")
+
+            if score_final_f3 >= 80:
+                st.success("""
+                    **Excelente! Projeto pronto para execução**
+
+                    ✅ **Recomendações:**
+                    - Iniciar fase de implementação
+                    - Ativar estrutura de governança
+                    - Executar planos de comunicação
+                    """)
+            elif score_final_f3 >= 60:
+                st.warning("""
+                    **Projeto viável com ajustes necessários**
+
+                    ⚠️ **Ações recomendadas:**
+                    - Finalizar documentação pendente
+                    - Completar contratações críticas
+                    - Resolver pendências de licenciamento
+                    """)
+            else:
+                st.error("""
+                    **Projeto não pronto para execução**
+
+                    ❌ **Ações necessárias:**
+                    - Revisar engenharia de detalhe
+                    - Finalizar contratos principais
+                    - Resolver questões regulatórias
+                    """)
+
+        # Análise detalhada por dimensão
+        st.markdown("#### 📊 Análise Detalhada por Dimensão")
+
+        # Identificar pontos fortes e fracos
+        scores_f3 = {
+            "Engenharia e Especificações": score_eng,
+            "Contratação e Suprimentos": score_cont,
+            "Licenciamento e Conformidade": score_lic,
+            "Planos de Execução": score_plan_exec,
+            "Controles e Riscos": score_cont_risco
+        }
+
+        pontos_fortes_f3 = [k for k, v in scores_f3.items() if v >= 80]
+        pontos_atenção_f3 = [k for k, v in scores_f3.items() if 60 <= v < 80]
+        pontos_críticos_f3 = [k for k, v in scores_f3.items() if v < 60]
+
+        col_analise1, col_analise2, col_analise3 = st.columns(3)
+
+        with col_analise1:
+            if pontos_fortes_f3:
+                st.markdown("**🟢 Pontos Fortes**")
+                for ponto in pontos_fortes_f3:
+                    st.markdown(f"✅ {ponto}")
+            else:
+                st.markdown("**🟢 Pontos Fortes**")
+                st.markdown("_Nenhum identificado_")
+
+        with col_analise2:
+            if pontos_atenção_f3:
+                st.markdown("**🟡 Necessita Atenção**")
+                for ponto in pontos_atenção_f3:
+                    st.markdown(f"⚠️ {ponto}")
+            else:
+                st.markdown("**🟡 Necessita Atenção**")
+                st.markdown("_Nenhum identificado_")
+
+        with col_analise3:
+            if pontos_críticos_f3:
+                st.markdown("**🔴 Pontos Críticos**")
+                for ponto in pontos_críticos_f3:
+                    st.markdown(f"❌ {ponto}")
+            else:
+                st.markdown("**🔴 Pontos Críticos**")
+                st.markdown("_Nenhum identificado_")
+
+        # Checklist de prontidão para execução
+        st.markdown("#### ✅ Checklist de Prontidão para Execução")
+
+        checklist_items = [
+            ("Engenharia de detalhe completa", score_eng >= 80),
+            ("Contratos principais assinados", score_cont >= 80),
+            ("Licenças obtidas", score_lic >= 80),
+            ("Planos de execução aprovados", score_plan_exec >= 80),
+            ("Sistema de controle estabelecido", score_cont_risco >= 80)
+        ]
+
+        col_check1, col_check2 = st.columns(2)
+
+        for i, (item, status) in enumerate(checklist_items):
+            col = col_check1 if i % 2 == 0 else col_check2
+            with col:
+                icon = "✅" if status else "❌"
+                color = "#155724" if status else "#721c24"
+                st.markdown(f"<span style='color: {color};'>{icon} {item}</span>", unsafe_allow_html=True)
+
+        # Próximos passos
+        st.markdown("#### 🚀 Próximos Passos Recomendados")
+
+        if score_final_f3 >= 80:
+            st.info("""
+                1. **Kick-off oficial** do projeto de execução
+                2. **Ativar estrutura** de governança e controle
+                3. **Mobilizar equipes** e recursos alocados
+                4. **Executar planos** de comunicação e engajamento
+                5. **Iniciar monitoramento** de marcos e entregas
+                """)
+        elif score_final_f3 >= 60:
+            st.warning("""
+                1. **Finalizar pendências** identificadas nas áreas críticas
+                2. **Completar documentação** técnica e contratual
+                3. **Resolver questões** de licenciamento pendentes
+                4. **Reavaliar prontidão** após correções
+                5. **Planejar cronograma** considerando ajustes
+                """)
+        else:
+            st.error("""
+                1. **Revisar completamente** engenharia e especificações
+                2. **Renegociar contratos** ou buscar novos fornecedores
+                3. **Resolver questões** regulatórias e de conformidade
+                4. **Considerar retorno** ao FELKLA-2 para revisão
+                5. **Reavaliar viabilidade** do cronograma proposto
+                """)
+
+        # Resumo executivo final
+        st.markdown("#### 📋 Resumo Executivo Final")
+
+        resumo_color = "#d4edda" if score_final_f3 >= 80 else "#fff3cd" if score_final_f3 >= 60 else "#f8d7da"
+        resumo_border = "#006837" if score_final_f3 >= 80 else "#ffc107" if score_final_f3 >= 60 else "#dc3545"
+
+        prontidao_status = "PRONTO" if score_final_f3 >= 80 else "PENDENTE" if score_final_f3 >= 60 else "NÃO PRONTO"
+
+        st.markdown(f"""
+            <div style="background: {resumo_color}; padding: 1.5rem; border-radius: 10px; 
+                        border-left: 4px solid {resumo_border}; margin: 1rem 0;">
+                <h4 style="margin-top: 0;">🎯 Status Final: {prontidao_status} PARA EXECUÇÃO</h4>
+                <p><strong>Score FELKLA-3:</strong> {score_final_f3:.1f}%</p>
+                <p><strong>Dimensão mais forte:</strong> {max(scores_f3, key=scores_f3.get)} ({max(scores_f3.values()):.1f}%)</p>
+                <p><strong>Dimensão crítica:</strong> {min(scores_f3, key=scores_f3.get)} ({min(scores_f3.values()):.1f}%)</p>
+                <p><strong>Questões respondidas:</strong> {len(respostas_preenchidas_f3)}/{len(todas_respostas_f3)}</p>
+                <p><strong>Itens do checklist aprovados:</strong> {sum(1 for _, status in checklist_items if status)}/{len(checklist_items)}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # Conclusão da metodologia FELKLA
+        if score_final_f3 >= 80:
+            st.balloons()
+            st.success("""
+                🎉 **Parabéns! O projeto completou com sucesso a metodologia FELKLA e está pronto para execução.**
+
+                A metodologia FELKLA foi concluída com aprovação em todas as fases:
+                - ✅ FELKLA-1: Avaliação de oportunidades
+                - ✅ FELKLA-2: Seleção de alternativas  
+                - ✅ FELKLA-3: Definição do projeto
+
+                **O projeto pode prosseguir para a fase de implementação!**
+                """)
